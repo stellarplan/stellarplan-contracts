@@ -1,0 +1,15 @@
+[package]
+name = "plan_vault"
+version = "0.1.0"
+edition = "2021"
+description = "StellarPlan Plan Vault Soroban contract — time-locked financial plans"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
