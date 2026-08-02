@@ -14,9 +14,15 @@ set -euo pipefail
 NETWORK="${1:-testnet}"
 CONTRACT_WASM="target/wasm32v1-none/release/plan_vault.wasm"
 SOURCE_ACCOUNT="${STELLAR_SECRET_KEY:-}"
+TOKEN_CONTRACT="${USDC_TOKEN_CONTRACT:-}"
 
 if [ -z "$SOURCE_ACCOUNT" ]; then
   echo "ERROR: Set STELLAR_SECRET_KEY before running."
+  exit 1
+fi
+
+if [ -z "$TOKEN_CONTRACT" ]; then
+  echo "ERROR: Set USDC_TOKEN_CONTRACT before running."
   exit 1
 fi
 
@@ -24,10 +30,6 @@ echo "==> Building contract..."
 cargo build --release --target wasm32v1-none
 
 echo "==> Installing wasm into network..."
-stellar contract install \
-  --wasm "$CONTRACT_WASM" \
-  --network "$NETWORK"
-
 WASM_HASH=$(stellar contract install \
   --wasm "$CONTRACT_WASM" \
   --network "$NETWORK" 2>&1 | tail -1)
@@ -39,7 +41,7 @@ CONTRACT_ID=$(stellar contract create \
   --source "$SOURCE_ACCOUNT" \
   -- \
   --owner "$(stellar keys show "$SOURCE_ACCOUNT" 2>/dev/null || stellar keys public "$SOURCE_ACCOUNT")" \
-  --token "$(stellar contract asset --network "$NETWORK" native 2>/dev/null || echo 'USDC:GBBD47ifRHETYWFMDLQ7RdjwS9q3TzrC6tS2h9xV7vT8W7T8zB3M2u9')" \
+  --token "$TOKEN_CONTRACT" \
   | tail -1)
 
 echo ""
