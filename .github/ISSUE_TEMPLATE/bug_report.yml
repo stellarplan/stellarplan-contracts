@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a defect in the PlanVault Soroban contract
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Invoke `create_plan` with '...'
+        2. Then call '...'
+        3. See error / wrong balance
+    validations:
+      required: true
+  - type: input
+    id: toolchain
+    attributes:
+      label: Toolchain
+      placeholder: soroban-sdk 27.0.1, stellar-cli x.y.z, network testnet
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output / diagnostics
+      render: shell
+    validations:
+      required: false
