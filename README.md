@@ -120,7 +120,7 @@ status checks for branch protection on `main`.
 
 | Name | Contact |
 |---|---|
-| StellarPlan Team | Chijioke Joseph — Telegram: @cjstixx12 — Email: devt14985@gmail.com |
+| StellarPlan Team | helloworld1-star — Telegram: @cjstixx12 — Email: devt14985@gmail.com |
 
 <!-- Maintainer: replace the placeholder above with a real name and a Telegram handle or email. -->
 
