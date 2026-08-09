@@ -1,7 +1,12 @@
 # Build artifacts
 /target/
 
-~
+# Secrets / local env
+.env
+.env.local
+*.pem
+*.key
+
 # Cargo caches
 **/*.rs.bk
 
