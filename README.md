@@ -2,6 +2,8 @@
 
 > The Soroban smart contracts behind StellarPlan — time-locked "plans" that protect a wallet's salary allocations on Stellar until their due dates.
 
+[📚 Documentation](https://stellarplan.gitbook.io/stellarplan-docs/)
+
 <p align="center"><em>Rust · Soroban · built for the Drips Stellar Wave program (testnet)</em></p>
 
 [![CI](https://github.com/stellarplan/stellarplan-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/stellarplan/stellarplan-contracts/actions/workflows/ci.yml)
