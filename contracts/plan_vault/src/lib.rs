@@ -48,7 +48,9 @@ impl PlanVaultContract {
         set_initialized(&env);
         set_plan_count(&env, 0u32);
 
-        env.storage().instance().extend_ttl(INSTANCE_BUMP_AMOUNT, INSTANCE_BUMP_AMOUNT);
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_BUMP_AMOUNT, INSTANCE_BUMP_AMOUNT);
         events::vault_initialized(&env, &owner, &token);
         Ok(())
     }
@@ -95,7 +97,11 @@ impl PlanVaultContract {
             amount,
             plan_type,
             status: PlanStatus::Locked,
-            unlock_date: if plan_type == PlanType::Bill { unlock_date } else { 0 },
+            unlock_date: if plan_type == PlanType::Bill {
+                unlock_date
+            } else {
+                0
+            },
             created_at: now,
         };
         put_plan(&env, &plan);
@@ -213,7 +219,9 @@ impl PlanVaultContract {
         for id in 1..=count {
             if let Ok(plan) = get_plan(&env, id) {
                 if plan.status == PlanStatus::Locked {
-                    total = total.checked_add(plan.amount).ok_or(ContractError::Overflow)?;
+                    total = total
+                        .checked_add(plan.amount)
+                        .ok_or(ContractError::Overflow)?;
                 }
             }
         }

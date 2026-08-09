@@ -62,7 +62,9 @@ pub fn get_plan(env: &Env, plan_id: u32) -> Result<Plan, ContractError> {
 }
 
 pub fn put_plan(env: &Env, plan: &Plan) {
-    env.storage().persistent().set(&DataKey::Plan(plan.id), plan);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Plan(plan.id), plan);
     // Keep the entry alive for as long as the effort holds together.
     env.storage().persistent().extend_ttl(
         &DataKey::Plan(plan.id),

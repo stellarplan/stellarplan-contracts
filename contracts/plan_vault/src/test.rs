@@ -59,7 +59,12 @@ fn release_before_unlock_date_fails() {
     let (owner, token, client) = create_vault(&env);
     let sac = token::StellarAssetClient::new(&env, &token);
     sac.mint(&owner, &500_000);
-    let id = client.create_plan(&str(&env, "Rent"), &500_000, &PlanType::Bill, &(env.ledger().timestamp() + 1000));
+    let id = client.create_plan(
+        &str(&env, "Rent"),
+        &500_000,
+        &PlanType::Bill,
+        &(env.ledger().timestamp() + 1000),
+    );
     let res = client.try_release_plan(&id);
     assert_eq!(res.err(), Some(Ok(ContractError::NotYetUnlocked)));
 }
@@ -94,7 +99,12 @@ fn release_before_time_even_without_auth_rejected() {
     let sac = token::StellarAssetClient::new(&env, &token);
     sac.mint(&owner, &100_000);
 
-    let id = client.create_plan(&str(&env, "Rent"), &50_000, &PlanType::Bill, &(env.ledger().timestamp() + 1000));
+    let id = client.create_plan(
+        &str(&env, "Rent"),
+        &50_000,
+        &PlanType::Bill,
+        &(env.ledger().timestamp() + 1000),
+    );
 
     let stranger = Address::generate(&env);
     let res = client
@@ -148,9 +158,17 @@ fn confirm_without_request_fails() {
     let sac = token::StellarAssetClient::new(&env, &token);
     sac.mint(&owner, &100_000);
 
-    let id = client.create_plan(&str(&env, "Rent"), &50_000, &PlanType::Bill, &(env.ledger().timestamp() + 86_400));
+    let id = client.create_plan(
+        &str(&env, "Rent"),
+        &50_000,
+        &PlanType::Bill,
+        &(env.ledger().timestamp() + 86_400),
+    );
     let res = client.try_confirm_early_withdraw(&id);
-    assert_eq!(res.err(), Some(Ok(ContractError::EarlyWithdrawNotRequested)));
+    assert_eq!(
+        res.err(),
+        Some(Ok(ContractError::EarlyWithdrawNotRequested))
+    );
 }
 
 #[test]
@@ -202,7 +220,12 @@ fn creating_a_bill_plan_with_zero_or_past_unlock_date_fails() {
     );
     assert_eq!(r2.err(), Some(Ok(ContractError::UnlockDateInPast)));
 
-    let r3 = client.try_create_plan(&str(&env, "Rent"), &0, &PlanType::Bill, &(env.ledger().timestamp() + 100));
+    let r3 = client.try_create_plan(
+        &str(&env, "Rent"),
+        &0,
+        &PlanType::Bill,
+        &(env.ledger().timestamp() + 100),
+    );
     assert_eq!(r3.err(), Some(Ok(ContractError::InvalidAmount)));
 }
 
@@ -213,7 +236,12 @@ fn list_plans_and_protected_total() {
     let sac = token::StellarAssetClient::new(&env, &token);
     sac.mint(&owner, &1_000_000);
 
-    client.create_plan(&str(&env, "Rent"), &900_000, &PlanType::Bill, &(env.ledger().timestamp() + 86_400));
+    client.create_plan(
+        &str(&env, "Rent"),
+        &900_000,
+        &PlanType::Bill,
+        &(env.ledger().timestamp() + 86_400),
+    );
     client.create_plan(&str(&env, "Emergency"), &50_000, &PlanType::Emergency, &0);
 
     let plans = client.list_plans();
