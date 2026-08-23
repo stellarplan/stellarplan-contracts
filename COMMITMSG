@@ -1,0 +1,8 @@
+fix: Add inline rustdoc comments to plan_vault public functions
+
+- contracts\plan_vault\src\events.rs
+- contracts\plan_vault\src\storage.rs
+
+Fixes #3
+
+Signed-off-by: Vedant Madane <6527493+VedantMadane@users.noreply.github.com>
