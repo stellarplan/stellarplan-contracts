@@ -13,6 +13,7 @@ fn publish<T: IntoVal<Env, Val>, const N: usize>(
     env.events().publish(topics, data);
 }
 
+/// vault initialized
 pub fn vault_initialized(env: &Env, owner: &Address, token: &Address) {
     publish(
         env,
@@ -21,6 +22,7 @@ pub fn vault_initialized(env: &Env, owner: &Address, token: &Address) {
     );
 }
 
+/// plan created
 pub fn plan_created(env: &Env, plan_id: u32, amount: i128, unlock_date: u64) {
     publish(
         env,
@@ -29,6 +31,7 @@ pub fn plan_created(env: &Env, plan_id: u32, amount: i128, unlock_date: u64) {
     );
 }
 
+/// plan released
 pub fn plan_released(env: &Env, plan_id: u32, to: Address, amount: i128) {
     publish(
         env,
@@ -37,6 +40,7 @@ pub fn plan_released(env: &Env, plan_id: u32, to: Address, amount: i128) {
     );
 }
 
+/// early withdraw requested
 pub fn early_withdraw_requested(env: &Env, plan_id: u32) {
     publish(
         env,
@@ -45,6 +49,7 @@ pub fn early_withdraw_requested(env: &Env, plan_id: u32) {
     );
 }
 
+/// early withdraw completed
 pub fn early_withdraw_completed(env: &Env, plan_id: u32, to: Address, amount: i128) {
     publish(
         env,

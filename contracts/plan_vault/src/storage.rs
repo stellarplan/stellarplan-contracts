@@ -13,14 +13,17 @@ pub fn get_early_withdraw_delay(_env: &Env) -> u64 {
     0
 }
 
+/// is initialized
 pub fn is_initialized(env: &Env) -> bool {
     env.storage().instance().has(&DataKey::Initialized)
 }
 
+/// set initialized
 pub fn set_initialized(env: &Env) {
     env.storage().instance().set(&DataKey::Initialized, &true);
 }
 
+/// get owner
 pub fn get_owner(env: &Env) -> Result<Address, ContractError> {
     env.storage()
         .instance()
@@ -28,10 +31,12 @@ pub fn get_owner(env: &Env) -> Result<Address, ContractError> {
         .ok_or(ContractError::NotInitialized)
 }
 
+/// set owner
 pub fn set_owner(env: &Env, owner: &Address) {
     env.storage().instance().set(&DataKey::Owner, owner);
 }
 
+/// get token
 pub fn get_token(env: &Env) -> Result<Address, ContractError> {
     env.storage()
         .instance()
@@ -39,10 +44,12 @@ pub fn get_token(env: &Env) -> Result<Address, ContractError> {
         .ok_or(ContractError::NotInitialized)
 }
 
+/// set token
 pub fn set_token(env: &Env, token: &Address) {
     env.storage().instance().set(&DataKey::Token, token);
 }
 
+/// get plan count
 pub fn get_plan_count(env: &Env) -> Result<u32, ContractError> {
     env.storage()
         .instance()
@@ -50,10 +57,12 @@ pub fn get_plan_count(env: &Env) -> Result<u32, ContractError> {
         .ok_or(ContractError::NotInitialized)
 }
 
+/// set plan count
 pub fn set_plan_count(env: &Env, count: u32) {
     env.storage().instance().set(&DataKey::PlanCount, &count);
 }
 
+/// get plan
 pub fn get_plan(env: &Env, plan_id: u32) -> Result<Plan, ContractError> {
     env.storage()
         .persistent()
@@ -61,6 +70,7 @@ pub fn get_plan(env: &Env, plan_id: u32) -> Result<Plan, ContractError> {
         .ok_or(ContractError::PlanNotFound)
 }
 
+/// put plan
 pub fn put_plan(env: &Env, plan: &Plan) {
     env.storage()
         .persistent()
