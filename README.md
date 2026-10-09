@@ -43,7 +43,10 @@ cargo test
 </details>
 
 The compiled artifact is written to `target/wasm32v1-none/release/plan_vault.wasm`.
-The test suite is 10 unit/integration tests in `contracts/plan_vault/src/test.rs`.
+The test suite is 27 unit/integration tests in `contracts/plan_vault/src/test.rs`
+and `contracts/plan_vault/src/hardening_tests.rs`, covering authorization
+failures, input validation, the early-withdraw delay, overflow safety, and
+storage keep-alive. See [CHANGELOG.md](./CHANGELOG.md).
 
 ## Deploy (testnet)
 

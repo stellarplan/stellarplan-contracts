@@ -19,4 +19,8 @@ pub enum ContractError {
     EarlyWithdrawDelayNotMet = 12,
     EarlyWithdrawNotRequested = 13,
     Overflow = 14,
+    /// Plan name is empty or longer than `MAX_NAME_LEN` bytes.
+    InvalidName = 15,
+    /// Requested early-withdraw delay exceeds `MAX_EARLY_WITHDRAW_DELAY`.
+    InvalidDelay = 16,
 }
