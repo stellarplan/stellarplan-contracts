@@ -2,15 +2,66 @@ use soroban_sdk::{Address, Env};
 
 use crate::{
     errors::ContractError,
-    types::{DataKey, Plan},
+    types::{DataKey, Plan, INSTANCE_BUMP_AMOUNT},
 };
 
-/// Early-withdraw friction delay, in seconds.
-/// 0 means "intent must simply be recorded in a previous ledger" — we keep it
-/// at 0 for MVP so testnet demos aren't blocked waiting real time, while the
-/// two-step flow still forces the user to pause and confirm twice.
-pub fn get_early_withdraw_delay(_env: &Env) -> u64 {
-    0
+/// Early-withdraw cooling-off period in seconds.
+///
+/// Defaults to 0 (the intent only has to be recorded before it is confirmed) so
+/// existing vaults and testnet demos behave as before. The owner can raise it
+/// with `set_early_withdraw_delay`.
+pub fn get_early_withdraw_delay(env: &Env) -> u64 {
+    env.storage()
+        .instance()
+        .get(&DataKey::EarlyWithdrawDelay)
+        .unwrap_or(0)
+}
+
+pub fn set_early_withdraw_delay(env: &Env, seconds: u64) {
+    env.storage()
+        .instance()
+        .set(&DataKey::EarlyWithdrawDelay, &seconds);
+}
+
+/// Extend the instance entry (owner, token, counters, settings) so a vault that
+/// is only used occasionally does not expire between interactions.
+pub fn bump_instance(env: &Env) {
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_BUMP_AMOUNT, INSTANCE_BUMP_AMOUNT);
+}
+
+/// Record when the owner asked to break a plan, and keep that entry alive.
+pub fn put_early_withdraw_request(env: &Env, plan_id: u32, requested_at: u64) {
+    let key = DataKey::EarlyWithdrawRequest(plan_id);
+    env.storage().persistent().set(&key, &requested_at);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, INSTANCE_BUMP_AMOUNT, INSTANCE_BUMP_AMOUNT);
+}
+
+pub fn get_early_withdraw_request(env: &Env, plan_id: u32) -> Option<u64> {
+    env.storage()
+        .persistent()
+        .get(&DataKey::EarlyWithdrawRequest(plan_id))
+}
+
+pub fn clear_early_withdraw_request(env: &Env, plan_id: u32) {
+    env.storage()
+        .persistent()
+        .remove(&DataKey::EarlyWithdrawRequest(plan_id));
+}
+
+/// Extend one plan's persistent entry. Returns false if the plan is missing.
+pub fn bump_plan(env: &Env, plan_id: u32) -> bool {
+    let key = DataKey::Plan(plan_id);
+    if !env.storage().persistent().has(&key) {
+        return false;
+    }
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, INSTANCE_BUMP_AMOUNT, INSTANCE_BUMP_AMOUNT);
+    true
 }
 
 pub fn is_initialized(env: &Env) -> bool {
@@ -68,7 +119,7 @@ pub fn put_plan(env: &Env, plan: &Plan) {
     // Keep the entry alive for as long as the effort holds together.
     env.storage().persistent().extend_ttl(
         &DataKey::Plan(plan.id),
-        crate::types::INSTANCE_BUMP_AMOUNT,
-        crate::types::INSTANCE_BUMP_AMOUNT,
+        INSTANCE_BUMP_AMOUNT,
+        INSTANCE_BUMP_AMOUNT,
     );
 }

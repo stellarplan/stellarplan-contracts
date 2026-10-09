@@ -6,7 +6,13 @@ pub const DAY_IN_LEDGERS: u32 = 17_280;
 /// ~30 days.
 pub const INSTANCE_BUMP_AMOUNT: u32 = 30 * DAY_IN_LEDGERS;
 
-/// Instance storage keys.
+/// Longest accepted plan name, in bytes. Names are stored on-chain, so an
+/// unbounded name would let a caller inflate storage rent.
+pub const MAX_NAME_LEN: u32 = 64;
+/// Longest early-withdraw cooling-off period the owner may configure (30 days).
+pub const MAX_EARLY_WITHDRAW_DELAY: u64 = 30 * 24 * 60 * 60;
+
+/// Storage keys.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DataKey {
@@ -16,6 +22,8 @@ pub enum DataKey {
     PlanCount,
     Plan(u32),
     EarlyWithdrawRequest(u32),
+    /// Owner-configured cooling-off period, in seconds. Absent means 0.
+    EarlyWithdrawDelay,
 }
 
 #[contracttype]

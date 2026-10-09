@@ -52,3 +52,19 @@ pub fn early_withdraw_completed(env: &Env, plan_id: u32, to: Address, amount: i1
         (plan_id, to, amount),
     );
 }
+
+pub fn early_withdraw_cancelled(env: &Env, plan_id: u32) {
+    publish(
+        env,
+        [symbol_short!("vault"), symbol_short!("ew_can")],
+        plan_id,
+    );
+}
+
+pub fn early_withdraw_delay_updated(env: &Env, seconds: u64) {
+    publish(
+        env,
+        [symbol_short!("vault"), symbol_short!("ew_dly")],
+        seconds,
+    );
+}

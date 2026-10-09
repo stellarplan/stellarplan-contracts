@@ -18,6 +18,8 @@ mod storage;
 mod types;
 
 #[cfg(test)]
+mod hardening_tests;
+#[cfg(test)]
 mod test;
 
 pub use errors::ContractError;
@@ -25,10 +27,11 @@ pub use types::{Plan, PlanStatus, PlanType};
 
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Symbol, Vec};
 use storage::{
-    get_owner, get_plan, get_plan_count, get_token, is_initialized, put_plan, set_initialized,
-    set_owner, set_plan_count, set_token,
+    bump_instance, bump_plan, clear_early_withdraw_request, get_early_withdraw_request, get_owner,
+    get_plan, get_plan_count, get_token, is_initialized, put_early_withdraw_request, put_plan,
+    set_early_withdraw_delay, set_initialized, set_owner, set_plan_count, set_token,
 };
-use types::{DataKey, INSTANCE_BUMP_AMOUNT};
+use types::{MAX_EARLY_WITHDRAW_DELAY, MAX_NAME_LEN};
 
 #[contract]
 pub struct PlanVaultContract;
@@ -48,9 +51,7 @@ impl PlanVaultContract {
         set_initialized(&env);
         set_plan_count(&env, 0u32);
 
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_BUMP_AMOUNT, INSTANCE_BUMP_AMOUNT);
+        bump_instance(&env);
         events::vault_initialized(&env, &owner, &token);
         Ok(())
     }
@@ -75,6 +76,9 @@ impl PlanVaultContract {
 
         if amount <= 0 {
             return Err(ContractError::InvalidAmount);
+        }
+        if name.is_empty() || name.len() > MAX_NAME_LEN {
+            return Err(ContractError::InvalidName);
         }
         if plan_type == PlanType::Bill && unlock_date == 0 {
             return Err(ContractError::InvalidUnlockDate);
@@ -106,6 +110,7 @@ impl PlanVaultContract {
         };
         put_plan(&env, &plan);
         set_plan_count(&env, plan_id);
+        bump_instance(&env);
 
         events::plan_created(&env, plan_id, amount, plan.unlock_date);
         Ok(plan_id)
@@ -134,6 +139,7 @@ impl PlanVaultContract {
 
         plan.status = PlanStatus::Released;
         put_plan(&env, &plan);
+        bump_instance(&env);
         events::plan_released(&env, plan_id, owner, plan.amount);
         Ok(())
     }
@@ -150,20 +156,17 @@ impl PlanVaultContract {
             return Err(ContractError::PlanNotLocked);
         }
 
-        env.storage().persistent().set(
-            &DataKey::EarlyWithdrawRequest(plan_id),
-            &env.ledger().timestamp(),
-        );
+        put_early_withdraw_request(&env, plan_id, env.ledger().timestamp());
+        bump_instance(&env);
         events::early_withdraw_requested(&env, plan_id);
         Ok(())
     }
 
     /// Early withdrawal, step 2: complete the withdrawal after the delay.
     ///
-    /// Requires the owner's signature again. The delay is only enforced if a
-    /// `EARLY_WITHDRAW_DELAY` (seconds) was configured at build time via
-    /// `storage::get_early_withdraw_delay`; by default the intent must have been
-    /// recorded in a prior ledger.
+    /// Requires the owner's signature again. The request must have been
+    /// recorded at least `get_early_withdraw_delay()` seconds ago. The delay is
+    /// 0 by default and can be raised with `set_early_withdraw_delay`.
     pub fn confirm_early_withdraw(env: Env, plan_id: u32) -> Result<(), ContractError> {
         let owner = get_owner(&env)?;
         owner.require_auth();
@@ -173,16 +176,14 @@ impl PlanVaultContract {
             return Err(ContractError::PlanNotLocked);
         }
 
-        let key = DataKey::EarlyWithdrawRequest(plan_id);
-        let requested_at: u64 = env
-            .storage()
-            .persistent()
-            .get(&key)
+        let requested_at = get_early_withdraw_request(&env, plan_id)
             .ok_or(ContractError::EarlyWithdrawNotRequested)?;
 
         let required_delay = storage::get_early_withdraw_delay(&env);
-        let now = env.ledger().timestamp();
-        if now < requested_at + required_delay {
+        let ready_at = requested_at
+            .checked_add(required_delay)
+            .ok_or(ContractError::Overflow)?;
+        if env.ledger().timestamp() < ready_at {
             return Err(ContractError::EarlyWithdrawDelayNotMet);
         }
 
@@ -190,8 +191,65 @@ impl PlanVaultContract {
 
         plan.status = PlanStatus::EarlyWithdrawn;
         put_plan(&env, &plan);
-        env.storage().persistent().remove(&key);
+        clear_early_withdraw_request(&env, plan_id);
+        bump_instance(&env);
         events::early_withdraw_completed(&env, plan_id, owner, plan.amount);
+        Ok(())
+    }
+
+    /// Abandon a pending early-withdraw request.
+    ///
+    /// Requires the owner's signature. The plan stays locked and the request
+    /// is forgotten, so a later withdrawal has to start again from step 1.
+    pub fn cancel_early_withdraw(env: Env, plan_id: u32) -> Result<(), ContractError> {
+        let owner = get_owner(&env)?;
+        owner.require_auth();
+
+        // The plan must exist; the request must too.
+        get_plan(&env, plan_id)?;
+        if get_early_withdraw_request(&env, plan_id).is_none() {
+            return Err(ContractError::EarlyWithdrawNotRequested);
+        }
+        clear_early_withdraw_request(&env, plan_id);
+        bump_instance(&env);
+        events::early_withdraw_cancelled(&env, plan_id);
+        Ok(())
+    }
+
+    /// Set the early-withdraw cooling-off period, in seconds.
+    ///
+    /// Requires the owner's signature. Capped at 30 days. This is a
+    /// self-imposed pause: it makes impulsive withdrawals harder but it does
+    /// not stop the owner from changing the setting later.
+    pub fn set_early_withdraw_delay(env: Env, seconds: u64) -> Result<(), ContractError> {
+        let owner = get_owner(&env)?;
+        owner.require_auth();
+
+        if seconds > MAX_EARLY_WITHDRAW_DELAY {
+            return Err(ContractError::InvalidDelay);
+        }
+        set_early_withdraw_delay(&env, seconds);
+        bump_instance(&env);
+        events::early_withdraw_delay_updated(&env, seconds);
+        Ok(())
+    }
+
+    /// Current early-withdraw cooling-off period, in seconds.
+    pub fn get_early_withdraw_delay(env: Env) -> u64 {
+        storage::get_early_withdraw_delay(&env)
+    }
+
+    /// Keep the vault's storage alive. Callable by ANYONE.
+    ///
+    /// Extends the instance entry and every existing plan entry by about 30
+    /// days. It moves no funds and changes no data, so a keeper job can call it
+    /// without the owner's signature.
+    pub fn bump_ttl(env: Env) -> Result<(), ContractError> {
+        let count = get_plan_count(&env)?;
+        bump_instance(&env);
+        for id in 1..=count {
+            bump_plan(&env, id);
+        }
         Ok(())
     }
 
@@ -231,7 +289,7 @@ impl PlanVaultContract {
     /// Contract version.
     pub fn version(env: Env) -> Symbol {
         let _ = env;
-        symbol_short!("v1_0_0")
+        symbol_short!("v1_1_0")
     }
 }
 

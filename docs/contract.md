@@ -18,7 +18,7 @@ The API stores it on `users.vaultContractId` after deployment.
 | `get_plan(plan_id) → Plan` | — | |
 | `list_plans() → Vec<Plan>` | — | |
 | `get_protected_total() → i128` | — | sum of locked amounts |
-| `version() → Symbol` | — | `v1_0_0` |
+| `version() → Symbol` | — | `v1_1_0` |
 
 ## Plan types
 
@@ -37,7 +37,8 @@ The API stores it on `users.vaultContractId` after deployment.
 
 ## Events
 
-Topics start with `vault`: `init`, `create`, `release`, `ew_req`, `ew_done`.
+Topics start with `vault`: `init`, `create`, `release`, `ew_req`, `ew_done`,
+`ew_can` (request cancelled), `ew_dly` (delay changed).
 
 ## Storage layout
 
